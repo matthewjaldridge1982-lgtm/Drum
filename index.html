@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EKO ComputeRhythm — Virtual</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="title-bar">
+    <h1>EKO ComputeRhythm</h1>
+    <div class="subtitle">virtual recreation — Phase 2: the card system &middot; <a href="tests.html" style="color:inherit">reader tests</a></div>
+  </header>
+
+  <section class="panel">
+    <h2>Transport</h2>
+    <div class="transport-bar">
+      <div class="transport-buttons">
+        <button id="btn-start" class="xport-btn">Start</button>
+        <button id="btn-stop" class="xport-btn">Stop</button>
+        <button id="btn-hold" class="xport-btn">Hold</button>
+        <button id="btn-cancel" class="xport-btn danger">General Cancel</button>
+      </div>
+      <div class="tempo-control">
+        <label for="tempo-slider">Speed</label>
+        <input id="tempo-slider" type="range" min="80" max="600" step="5" value="200">
+        <span id="tempo-readout" class="tempo-readout"></span>
+      </div>
+      <div class="length-control">
+        <label>Time signature</label>
+        <div id="length-buttons" class="length-buttons"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Programme matrix (A–F × 1–16)</h2>
+    <div id="matrix-container"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Punch card</h2>
+    <div class="card-toolbar">
+      <button id="card-new" class="xport-btn">New card</button>
+      <button id="card-export-json" class="xport-btn">Export JSON</button>
+      <button id="card-import-json" class="xport-btn">Import JSON</button>
+      <input id="card-import-input" type="file" accept="application/json" style="display:none">
+      <button id="card-export-pdf" class="xport-btn">Export 1:1 PDF</button>
+      <span id="reader-status" class="reader-status"></span>
+    </div>
+    <div id="card-editor-container" class="card-editor-container"></div>
+    <div class="swipe-slider">
+      <label for="head-slider">Read head position</label>
+      <input id="head-slider" type="range" min="0" max="1000" value="0" step="1">
+    </div>
+    <footer class="hint">
+      Click a hole to punch/unpunch it. Press and drag anywhere on the card to scrub the
+      read head across it — the matrix above fills in column by column as the STEP track
+      strobes each one. Drag the head back past START (or click "New card") to re-arm a
+      fresh read.
+    </footer>
+  </section>
+
+  <section class="panel">
+    <h2>Instruments</h2>
+    <div id="instrument-strip" class="instrument-strip"></div>
+  </section>
+
+  <footer class="hint">
+    Click a lamp to punch/unpunch it directly, or program the matrix from a card below.
+    Each row's two toggle labels pick which of the row's two instruments fires.
+  </footer>
+</div>
+
+<script src="js/instruments.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/matrix.js"></script>
+<script src="js/transport.js"></script>
+<script src="js/reader.js"></script>
+<script src="js/card.js"></script>
+<script src="js/swipe.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/cardview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
