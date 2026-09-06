@@ -183,3 +183,37 @@ START-on-the-left/STOP-on-the-right is my choice, not a confirmed fact
 about the original.
 
 (Phase 3 notes to be appended below at its check-in.)
+
+## 70s retro visual redesign, v2 (branch: claude/eko-70s-retro-v2)
+
+Two earlier redesign attempts didn't land: a 3D rebuild (branch
+`claude/eko-3d-panel-redesign`) was rejected as unusable, and a first 2D
+retro pass (branch `claude/eko-70s-retro-redesign`) was rejected as
+looking worse than the plain Phase 1 UI *and* still not evoking the
+reference photos -- because in the process of fitting decorative chrome
+(wood cheeks, a badge, jacks) into a compact panel, the actual controls
+(lamps, knobs, sliders) got shrunk to the point of being both less usable
+than Phase 1 and less chunky than the real machine's photographed
+controls. This branch forks fresh from Phase 1+2 (not from either
+rejected attempt) and redoes the same visual approach at close to
+double the control scale: 42px lamp buttons (rounded-square, not
+circular -- closer to the photographed button shape) instead of 26px,
+38-56px knobs instead of 22px, a 44px fader instead of 26px, row-name
+text at 0.92rem instead of 0.58rem. `reader.js`/`card.js`/`swipe.js`/
+`transport.js`/`audio.js`/`instruments.js` are unchanged, same as both
+earlier attempts -- this remains purely a styling/layout exercise.
+
+The wood-grain technique (inline SVG `feTurbulence`, baked to a base64
+background-image, no image asset) and the overall panel structure
+(wood-grain end cheeks, per-row inline slider+names+knobs+select+lamps+
+cancel, general-cancel column, badge + card-in-slot on the right, cream
+bottom strip with power/volume/speed/transport/jacks) are carried over
+from the first retro attempt essentially unchanged -- that structure
+wasn't the complaint, the scale was.
+
+Layout needs roughly 1750-1900px of viewport width to render without the
+control area needing to scroll horizontally (it has `overflow-x: auto`
+as a fallback on narrower screens, rather than clipping anything
+unreachably). That's a real tradeoff of building the controls at a scale
+that actually matches the photos rather than compressing them to fit an
+arbitrary width -- flagging it rather than discovering it silently.

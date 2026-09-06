@@ -56,22 +56,79 @@
     notify({ type: 'rowSelect', row: row, slot: slot });
   }
 
+  // Real-panel display order (confirmed from reference photos): rows run
+  // F..A top-to-bottom, the reverse of this module's internal A-F keys
+  // (which follow the schematic's own SW910=row-A numbering). Display
+  // order only -- state stays keyed A-F throughout.
+  var DISPLAY_ROWS = ['F', 'E', 'D', 'C', 'B', 'A'];
+
+  var rowLevels = ROWS.reduce(function (acc, row) { acc[row] = 0.85; return acc; }, {});
+  var trimLevels = {}; // instrument id -> 0..1
+
+  function applyRowAudioLevel(row) {
+    var EKO = global.EKO;
+    if (!EKO.audio) return;
+    var inst = EKO.instrumentForRowSlot(row, rowSelect[row]);
+    var trim = trimLevels[inst.id] != null ? trimLevels[inst.id] : 0.85;
+    EKO.audio.setLevel(inst.id, rowLevels[row] * trim);
+  }
+
   function render(container) {
+    var EKO = global.EKO;
     container.innerHTML = '';
     var grid = document.createElement('div');
     grid.className = 'matrix-grid';
 
-    ROWS.forEach(function (row) {
+    DISPLAY_ROWS.forEach(function (row) {
       var rowEl = document.createElement('div');
       rowEl.className = 'matrix-row';
 
-      var label = document.createElement('div');
-      label.className = 'row-label';
-      label.textContent = row;
-      rowEl.appendChild(label);
+      var instA = EKO.instrumentForRowSlot(row, 'A');
+      var instB = EKO.instrumentForRowSlot(row, 'B');
+      if (trimLevels[instA.id] == null) trimLevels[instA.id] = instA.level != null ? instA.level : 0.85;
+      if (trimLevels[instB.id] == null) trimLevels[instB.id] = instB.level != null ? instB.level : 0.85;
 
-      var instA = global.EKO.instrumentForRowSlot(row, 'A');
-      var instB = global.EKO.instrumentForRowSlot(row, 'B');
+      // slider: this row's shared output trim
+      var sliderWrap = document.createElement('div');
+      sliderWrap.className = 'row-slider';
+      var fader = EKO.makeFader({
+        value: rowLevels[row],
+        title: 'Row ' + row + ' level',
+        onChange: function (v) {
+          rowLevels[row] = v;
+          applyRowAudioLevel(row);
+        }
+      });
+      sliderWrap.appendChild(fader.el);
+      rowEl.appendChild(sliderWrap);
+
+      // instrument-pair name plate + level knobs
+      var namesEl = document.createElement('div');
+      namesEl.className = 'row-names';
+
+      var knobsEl = document.createElement('div');
+      knobsEl.className = 'row-knobs';
+
+      [instA, instB].forEach(function (inst) {
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'row-name';
+        nameSpan.textContent = inst.name;
+        namesEl.appendChild(nameSpan);
+
+        var knob = EKO.makeKnob({
+          value: trimLevels[inst.id],
+          title: inst.name + ' level',
+          onChange: function (v) {
+            trimLevels[inst.id] = v;
+            applyRowAudioLevel(row);
+          }
+        });
+        knobsEl.appendChild(knob.el);
+      });
+      rowEl.appendChild(namesEl);
+      rowEl.appendChild(knobsEl);
+
+      // A/B select toggle
       var selectEl = document.createElement('div');
       selectEl.className = 'row-select';
       selectEl.title = instA.name + ' / ' + instB.name;
@@ -79,12 +136,20 @@
         var btn = document.createElement('button');
         btn.className = 'row-select-btn' + (rowSelect[row] === slot ? ' active' : '');
         btn.dataset.slot = slot;
-        btn.textContent = (slot === 'A' ? instA : instB).name;
-        btn.addEventListener('click', function () { setRowSelect(row, slot); });
+        btn.textContent = slot;
+        btn.addEventListener('click', function () {
+          setRowSelect(row, slot);
+          applyRowAudioLevel(row);
+        });
         selectEl.appendChild(btn);
       });
       selectEls[row] = selectEl;
       rowEl.appendChild(selectEl);
+
+      var label = document.createElement('div');
+      label.className = 'row-label';
+      label.textContent = row;
+      rowEl.appendChild(label);
 
       var stepsEl = document.createElement('div');
       stepsEl.className = 'row-steps';
@@ -100,7 +165,18 @@
         })(col);
       }
       rowEl.appendChild(stepsEl);
+
+      // per-row cancel knob (clears just this row's 16 latches)
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'row-cancel-btn';
+      cancelBtn.title = 'Clear row ' + row;
+      cancelBtn.addEventListener('click', function () {
+        for (var c = 0; c < COLS; c++) setCell(row, c, false);
+      });
+      rowEl.appendChild(cancelBtn);
+
       grid.appendChild(rowEl);
+      applyRowAudioLevel(row);
     });
 
     container.appendChild(grid);

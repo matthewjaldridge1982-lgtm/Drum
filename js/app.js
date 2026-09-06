@@ -24,24 +24,27 @@
   function buildTransport() {
     var EKO = window.EKO;
     var startBtn = document.getElementById('btn-start');
-    var stopBtn = document.getElementById('btn-stop');
     var holdBtn = document.getElementById('btn-hold');
     var cancelBtn = document.getElementById('btn-cancel');
-    var tempoSlider = document.getElementById('tempo-slider');
-    var tempoReadout = document.getElementById('tempo-readout');
     var lengthContainer = document.getElementById('length-buttons');
+    var led = document.getElementById('start-led');
+    var powerSwitch = document.getElementById('power-switch');
 
+    // Real hardware has a single START-STOP toggle, not separate buttons
+    // (confirmed from reference photos) -- see NOTES.md.
     startBtn.addEventListener('click', function () {
-      EKO.transport.start();
-      startBtn.classList.add('active');
-      stopBtn.classList.remove('active');
+      if (EKO.transport.isPlaying()) {
+        EKO.transport.stop();
+      } else {
+        EKO.audio.resume();
+        EKO.transport.start();
+      }
     });
-    stopBtn.addEventListener('click', function () {
-      EKO.transport.stop();
-      stopBtn.classList.add('active');
-      startBtn.classList.remove('active');
-      setTimeout(function () { stopBtn.classList.remove('active'); }, 150);
+    EKO.transport.onChange(function (evt) {
+      if (evt.type === 'start') { startBtn.classList.add('active'); led.classList.add('on'); }
+      else if (evt.type === 'stop') { startBtn.classList.remove('active'); led.classList.remove('on'); }
     });
+
     holdBtn.addEventListener('click', function () {
       var on = !EKO.transport.isHeld();
       EKO.transport.setHold(on);
@@ -51,19 +54,16 @@
       EKO.transport.generalCancel();
     });
 
-    function msToLabel(ms) {
-      var bpm = Math.round(60000 / ms);
-      return ms + ' ms/step (~' + bpm + ' bpm)';
-    }
-    tempoSlider.addEventListener('input', function () {
-      var ms = Number(tempoSlider.value);
-      EKO.transport.setStepInterval(ms / 1000);
-      tempoReadout.textContent = msToLabel(ms);
+    var powerOn = true;
+    powerSwitch.classList.add('on');
+    powerSwitch.addEventListener('click', function () {
+      powerOn = !powerOn;
+      powerSwitch.classList.toggle('on', powerOn);
+      if (!powerOn && EKO.transport.isPlaying()) EKO.transport.stop();
     });
-    tempoReadout.textContent = msToLabel(Number(tempoSlider.value));
-    EKO.transport.setStepInterval(Number(tempoSlider.value) / 1000);
 
-    EKO.transport.LENGTHS.forEach(function (len) {
+    // photo shows the seven lengths running ascending, x5..x16, left to right
+    EKO.transport.LENGTHS.slice().reverse().forEach(function (len) {
       var btn = document.createElement('button');
       btn.className = 'length-btn' + (len === EKO.transport.getLength() ? ' active' : '');
       btn.textContent = 'x' + len;
@@ -74,9 +74,35 @@
       });
       lengthContainer.appendChild(btn);
     });
+
+    // SPEED knob replaces the old linear slider -- same underlying
+    // EKO.transport.setStepInterval, just a rotary control to match the panel.
+    var speedKnob = EKO.makeKnob({
+      className: 'large chrome',
+      value: 0.55,
+      title: 'Speed',
+      onChange: function (v) {
+        var ms = 80 + v * (600 - 80);
+        EKO.transport.setStepInterval(ms / 1000);
+      }
+    });
+    speedKnob.setValue(0.55);
+    document.getElementById('speed-knob-slot').appendChild(speedKnob.el);
+
+    var volumeKnob = EKO.makeKnob({
+      className: 'large chrome',
+      value: 0.9,
+      title: 'Volume',
+      onChange: function (v) { EKO.audio.setMasterLevel(v); }
+    });
+    document.getElementById('volume-knob-slot').appendChild(volumeKnob.el);
   }
 
   function buildInstrumentStrip() {
+    // Per-instrument level now lives on the machine itself (the row knobs
+    // built by matrix.js) and master level is the panel's VOLUME knob --
+    // this strip is solo-monitoring only, a browser convenience with no
+    // hardware equivalent.
     var EKO = window.EKO;
     var strip = document.getElementById('instrument-strip');
 
@@ -84,26 +110,10 @@
       var ch = document.createElement('div');
       ch.className = 'channel';
 
-      var rowTag = document.createElement('div');
-      rowTag.className = 'row-tag';
-      rowTag.textContent = 'ROW ' + inst.row;
-      ch.appendChild(rowTag);
-
       var name = document.createElement('div');
       name.className = 'name';
       name.textContent = inst.name;
       ch.appendChild(name);
-
-      var slider = document.createElement('input');
-      slider.type = 'range';
-      slider.min = '0';
-      slider.max = '1';
-      slider.step = '0.01';
-      slider.value = String(inst.level != null ? inst.level : 0.8);
-      slider.addEventListener('input', function () {
-        EKO.audio.setLevel(inst.id, Number(slider.value));
-      });
-      ch.appendChild(slider);
 
       var soloBtn = document.createElement('button');
       soloBtn.className = 'solo-btn';
@@ -117,21 +127,6 @@
 
       strip.appendChild(ch);
     });
-
-    var master = document.createElement('div');
-    master.className = 'channel master-channel';
-    master.innerHTML = '<div class="row-tag">MASTER</div><div class="name">Mix</div>';
-    var masterSlider = document.createElement('input');
-    masterSlider.type = 'range';
-    masterSlider.min = '0';
-    masterSlider.max = '1';
-    masterSlider.step = '0.01';
-    masterSlider.value = '0.9';
-    masterSlider.addEventListener('input', function () {
-      EKO.audio.setMasterLevel(Number(masterSlider.value));
-    });
-    master.appendChild(masterSlider);
-    strip.appendChild(master);
   }
 
   function downloadBlob(blob, filename) {
