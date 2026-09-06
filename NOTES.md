@@ -78,5 +78,108 @@ The Phase 2 card-reader module in particular has zero dependencies either
 way. Flagging this in case you'd rather force real ES modules and just
 require a local server.
 
-(Phase 2 and Phase 3 notes to be appended below at their respective
-check-ins.)
+## Phase 2 — the card system
+
+### Card geometry: given vs. invented
+
+The pitches and the STEP lead are treated as spec, exactly as given:
+9 tracks (START, STEP, STOP, A-F) on a uniform **6.95mm** pitch; 16 data
+columns at **10.00mm** pitch; each column's STEP hole punched **2.35mm**
+ahead of that column's data holes.
+
+Everything else about the physical card had to be invented, since neither
+document specifies it, and is called out in `js/card.js`'s header rather
+than presented as read from anything:
+- **Hole diameter: 3.0mm.** Chosen, not measured — but not arbitrary:
+  it has to be bigger than the 2.35mm STEP lead for the reader's edge
+  policy below to work at all, and 3.0mm gives comfortable margin.
+- Margins/gaps around the hole grid (15mm side margins, 8mm top/bottom,
+  10mm gap from START to column 1) are plain invented layout choices.
+- These add up to a card roughly 200mm x 71.6mm, which happens to land
+  close to a real IBM punch card's 187mm x 82.5mm — a reassuring
+  plausibility check on the invented numbers, not a claim that this
+  matches the real EKO card's actual outer dimensions (unknown).
+
+### The reader's edge policy (this is the part that matters)
+
+`js/reader.js` captures data on STEP's **falling** edge, not its rising
+edge, and this is deliberate, not incidental. The brief states the STEP
+hole "leads" (is punched ahead of) its data column by 2.35mm. Take that
+literally — STEP hole positioned at lower X, encountered first — and the
+only way "data is settled before the strobe" can be true is if the
+strobe is the *trailing* edge of the STEP pulse: by the time the STEP
+hole has finished passing the head, the head has advanced far enough
+that it's now sitting inside the data holes' own open window (with the
+3.0mm hole diameter chosen above, comfortably so). Sampling on STEP's
+leading edge instead would read stale data. This mirrors a real
+technique from vintage paper-tape/punch-card hardware (offsetting a
+clock track ahead of the data it clocks, then using the clock pulse's
+trailing edge as the reliable strobe) — I did not find this stated
+anywhere in the manual; it's how the stated geometry and the stated
+consequence resolve to a single, non-arbitrary answer.
+
+START and STOP fire on their own rising edge — they don't gate any other
+track, so there's no settling concern for them.
+
+### Handling reversal without special-casing the reader
+
+reader.js only ever compares the current sample to the previous one — it
+has no notion of position, so a full backward feed and a forward feed
+that happens to revisit a hole look identical to it (both are just
+edges). Test 7 (`tests/reader.test.js`) exploits this directly: since
+STEP/STOP are gated behind `loading`, and `loading` only becomes true on
+START's rising edge, a fully-reversed sample stream ends in a clean,
+freshly-reset reader with nothing captured — START, having been first,
+is now last, so every STEP/STOP pulse along the way is ignored before it
+ever fires.
+
+That gate alone isn't enough for the *interactive* UI, though: a human
+dragging the head back over ground already read would, without more,
+re-trigger a second falling edge on a hole it already captured (backing
+up and coming forward again would double-count). That policy lives one
+layer up, in `js/swipe.js`: it tracks the furthest position fed so far
+and simply never re-feeds a position at or behind that mark. Backing up
+still moves the head visually (and lights the head lamps live), it just
+doesn't call `reader.feed()` again until the drag passes the old
+high-water mark. The gate re-arms once the card is withdrawn back past
+the START hole — "pull it out and feed it in again" is the deliberate,
+documented way to force a fresh read, mirroring how you'd actually
+restart a real card in a slot.
+
+### One deliberate framing deviation
+
+The brief describes dragging the *card* under a fixed head. The
+implementation instead drags a fixed card's read-head marker with the
+pointer. Physically identical relative motion, still entirely
+position-driven (there is no timer anywhere in `card.js`/`swipe.js`), but
+much simpler to render correctly (nothing needs to translate/clip on
+screen). Flagging the substitution rather than letting it pass silently.
+
+### Acceptance tests
+
+All 7 run against `js/reader.js` directly (`tests/reader.test.js`,
+viewable at `tests.html`), using hand-built idealised rise/fall sample
+sequences rather than the mm geometry — that's what makes them tests of
+the *reader module*, per the brief, rather than of the whole pipeline.
+Test 4 (speed independence) pads each sample with a variable number of
+identical repeats spanning ~100x to stand in for "sampled slower/faster";
+test 5 truncates and resumes a sequence; test 6 omits one STEP pulse from
+an otherwise-normal sequence and checks the resulting shift explicitly,
+including that the last column is left empty rather than silently
+patched. All 7 currently pass. The full geometry-driven pipeline
+(`card.js` + `swipe.js` + a real mouse drag) was additionally exercised
+by hand against the app itself, including the deliberately-broken
+"missing STEP at column 7" card, which visibly produces the same shifted
+pattern live on the matrix.
+
+### Open item
+
+Real punch-card readers commonly space tracks across the *width* and
+columns along the *length*, which is what's implemented, matching the
+card diagram in the manual (p12) as best I could tell from a low-
+resolution render — but I could not find an explicit statement of which
+physical edge of the real card is "up" or which end feeds first, so
+START-on-the-left/STOP-on-the-right is my choice, not a confirmed fact
+about the original.
+
+(Phase 3 notes to be appended below at its check-in.)

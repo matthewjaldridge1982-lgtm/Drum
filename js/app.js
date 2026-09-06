@@ -12,6 +12,7 @@
     EKO.matrix.render(document.getElementById('matrix-container'));
     buildTransport();
     buildInstrumentStrip();
+    buildCardSystem();
 
     // Most browsers require a user gesture before audio starts.
     document.body.addEventListener('pointerdown', function once() {
@@ -131,5 +132,88 @@
     });
     master.appendChild(masterSlider);
     strip.appendChild(master);
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function buildCardSystem() {
+    var EKO = window.EKO;
+    var geo = EKO.CardGeometry;
+    var statusEl = document.getElementById('reader-status');
+    var slider = document.getElementById('head-slider');
+
+    var card = EKO.createBlankCard();
+    var view = new EKO.CardView(document.getElementById('card-editor-container'), card);
+    EKO.activeCardView = view; // exposed for debugging/testing
+
+    function paintStatus(s) {
+      statusEl.innerHTML = (s.loading ? '<span class="loading">LOADING</span>' : '<span class="idle">IDLE</span>') +
+        ' &middot; column ' + s.column + ' / 16';
+    }
+    view.onStatus = paintStatus;
+
+    function configureSlider() {
+      slider.min = String(view.swipe.withdrawnPosition() - 10);
+      slider.max = String(geo.CARD_WIDTH_MM + 20);
+      slider.step = '0.1';
+      slider.value = String(view.headMm);
+    }
+    configureSlider();
+    paintStatus({ loading: view.reader.state.loading, column: view.reader.state.column });
+
+    var originalMoveHeadTo = view.moveHeadTo.bind(view);
+    view.moveHeadTo = function (mm) {
+      var events = originalMoveHeadTo(mm);
+      slider.value = String(view.headMm);
+      return events;
+    };
+
+    slider.addEventListener('input', function () {
+      view.moveHeadTo(Number(slider.value));
+    });
+
+    document.getElementById('card-new').addEventListener('click', function () {
+      view.loadCard(EKO.createBlankCard());
+      configureSlider();
+    });
+
+    document.getElementById('card-export-json').addEventListener('click', function () {
+      var blob = new Blob([EKO.cardToJSON(view.card)], { type: 'application/json' });
+      downloadBlob(blob, 'eko-card.json');
+    });
+
+    var importInput = document.getElementById('card-import-input');
+    document.getElementById('card-import-json').addEventListener('click', function () {
+      importInput.click();
+    });
+    importInput.addEventListener('change', function () {
+      var file = importInput.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var card = EKO.cardFromJSON(reader.result);
+          view.loadCard(card);
+          configureSlider();
+        } catch (e) {
+          alert('Could not read that card file: ' + e.message);
+        }
+      };
+      reader.readAsText(file);
+      importInput.value = '';
+    });
+
+    document.getElementById('card-export-pdf').addEventListener('click', function () {
+      EKO.downloadCardPdf(view.card, 'eko-card.pdf');
+    });
   }
 })(window);

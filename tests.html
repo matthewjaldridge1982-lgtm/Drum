@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EKO ComputeRhythm — reader tests</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .app { max-width: 900px; }
+  .case { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #3a352f; }
+  .case.pass { border-color: #2e6b3e; background: #12241a; }
+  .case.fail { border-color: #8c2e22; background: #2a1512; }
+  .case h3 { margin: 0 0 4px; font-size: 0.9rem; }
+  .case.pass h3::before { content: "PASS  "; color: #57c26f; }
+  .case.fail h3::before { content: "FAIL  "; color: #ef6a58; }
+  .case pre { margin: 6px 0 0; white-space: pre-wrap; color: #f0a898; font-size: 0.78rem; }
+  #summary { font-size: 1rem; margin-bottom: 16px; color: var(--ink-dim); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="title-bar">
+    <h1>Reader acceptance tests</h1>
+    <div class="subtitle"><a href="index.html" style="color:inherit">&larr; back to the app</a></div>
+  </header>
+  <div id="summary"></div>
+  <div id="results"></div>
+</div>
+
+<script src="js/reader.js"></script>
+<script src="tests/reader.test.js"></script>
+<script>
+  (function () {
+    var results = ReaderTests.cases.map(function (c) {
+      try {
+        c.fn();
+        return { name: c.name, pass: true };
+      } catch (e) {
+        return { name: c.name, pass: false, error: e.message };
+      }
+    });
+
+    var passCount = results.filter(function (r) { return r.pass; }).length;
+    document.getElementById('summary').textContent =
+      passCount + ' / ' + results.length + ' passed';
+
+    var container = document.getElementById('results');
+    results.forEach(function (r) {
+      var div = document.createElement('div');
+      div.className = 'case ' + (r.pass ? 'pass' : 'fail');
+      var h3 = document.createElement('h3');
+      h3.textContent = r.name;
+      div.appendChild(h3);
+      if (!r.pass) {
+        var pre = document.createElement('pre');
+        pre.textContent = r.error;
+        div.appendChild(pre);
+      }
+      container.appendChild(div);
+    });
+
+    // Expose for automated/headless checking (e.g. Playwright).
+    window.__READER_TEST_RESULTS__ = results;
+  })();
+</script>
+</body>
+</html>
