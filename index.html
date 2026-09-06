@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EKO ComputeRhythm — Virtual</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="title-bar">
+    <h1>EKO ComputeRhythm</h1>
+    <div class="subtitle">virtual recreation — Phase 1: the machine</div>
+  </header>
+
+  <section class="panel">
+    <h2>Transport</h2>
+    <div class="transport-bar">
+      <div class="transport-buttons">
+        <button id="btn-start" class="xport-btn">Start</button>
+        <button id="btn-stop" class="xport-btn">Stop</button>
+        <button id="btn-hold" class="xport-btn">Hold</button>
+        <button id="btn-cancel" class="xport-btn danger">General Cancel</button>
+      </div>
+      <div class="tempo-control">
+        <label for="tempo-slider">Speed</label>
+        <input id="tempo-slider" type="range" min="80" max="600" step="5" value="200">
+        <span id="tempo-readout" class="tempo-readout"></span>
+      </div>
+      <div class="length-control">
+        <label>Time signature</label>
+        <div id="length-buttons" class="length-buttons"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Programme matrix (A–F × 1–16)</h2>
+    <div id="matrix-container"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Instruments</h2>
+    <div id="instrument-strip" class="instrument-strip"></div>
+  </section>
+
+  <footer class="hint">
+    Click a lamp to punch/unpunch it directly (no card yet — that's Phase 2).
+    Each row's two toggle labels pick which of the row's two instruments fires.
+  </footer>
+</div>
+
+<script src="js/instruments.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/matrix.js"></script>
+<script src="js/transport.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
