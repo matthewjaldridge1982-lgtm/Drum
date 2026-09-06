@@ -183,3 +183,93 @@ START-on-the-left/STOP-on-the-right is my choice, not a confirmed fact
 about the original.
 
 (Phase 3 notes to be appended below at its check-in.)
+
+## 70s retro visual redesign (branch: claude/eko-70s-retro-redesign)
+
+A 3D redesign was attempted first (branch `claude/eko-3d-panel-redesign`)
+and rejected as unusable and not evocative of the reference photos. This
+branch instead redoes the visual language in 2D -- same DOM-based
+approach as Phases 1-2, forked from `claude/eko-computerythm-build-cy6zmw`
+before the 3D detour -- leaning hard on four reference photos of a real
+ComputeRhythm unit. `reader.js`, `card.js`, `swipe.js`, `transport.js`,
+`audio.js` and `instruments.js` are untouched; the changes are
+`css/styles.css` (full rewrite), `js/matrix.js`'s `render()` (rebuilt to
+match the photographed row layout), a new `js/knob.js` (rotary knob +
+vertical fader widgets), and `index.html`/`js/app.js` (restructured to
+match the panel photos).
+
+### Wood grain
+
+Built procedurally with an inline SVG `feTurbulence` filter (fractal
+noise, very different X/Y `baseFrequency` to get grain-direction
+streaking, then a `feColorMatrix` to tint it walnut-brown), baked to a
+base64 `data:image/svg+xml` background-image in `styles.css`. No image
+asset, no network fetch, fully offline -- and it tiles cleanly at any
+size since it's vector-generated. The same technique makes the black
+panel's subtle leatherette/pebble texture and the cream bottom strip's
+fleck texture, both far more subtle than the wood.
+
+The real unit's end cheeks read as plain cream in these particular
+photos, not visibly wood-grained -- wood grain here is your explicit
+stylistic request for "a 70s vibe," applied deliberately rather than
+because the photos show it. Said plainly rather than silently overriding
+the photo on this one point.
+
+### Layout changes from Phase 1, driven by the photos
+
+- **Per-row sliders and knobs are now inline with the matrix**, not a
+  separate strip below it -- matching the photographed layout of
+  [slider][instrument-pair name][2 knobs][matrix row]. This meant
+  rebuilding `matrix.js`'s `render()` (previously just lamps + a 2-button
+  A/B select) into the fuller row, including two new custom widgets
+  (`EKO.makeKnob`, `EKO.makeFader` in `js/knob.js`) since native
+  `<input type=range>` styling couldn't be made to look like a real
+  fader/knob across browsers.
+- **Display row order is now F..A top-to-bottom**, matching the photos,
+  via a `DISPLAY_ROWS` array local to `matrix.js`'s renderer. Internal
+  state stays keyed A-F (unchanged, matches the schematic's own SW910=
+  row-A numbering).
+- **Single START/STOP toggle button**, not separate Start and Stop
+  buttons -- the photo shows one "START-STOP" button.
+  Time-signature buttons now read ascending x5..x16 left-to-right,
+  matching the photo (was descending in Phase 1).
+- **General Cancel plus six per-row cancel controls**, next to the
+  matrix as photographed. The per-row cancel is a plain click target
+  (clears that row's 16 latches) -- its exact real-world form on the
+  actual hardware is unconfirmed (see below), so it's built as
+  functionally obvious rather than claimed to match a specific
+  photographed part.
+- **The card now visibly sits in a slot** (a dark slot-mouth bar above
+  it, the card rotated slightly and drop-shadowed) rather than sitting in
+  a plain rectangular editor panel. The click-to-punch / drag-to-scrub
+  interaction itself is exactly Phase 2's `cardview.js`, unmodified.
+
+### Control-mapping interpretation (same honest caveat as before)
+
+A photo can't tell you what a knob does electrically -- a continuous pot
+and a detented switch look the same in a still image. The mapping here:
+the slider is a row's shared output trim, and the two knobs are each of
+that row's two instruments' own level (satisfying "each of the twelve
+gets its own level fader" from the brief, literally, as a rotary rather
+than linear control to match what the photo shows). This is an
+interpretation, not a newly-confirmed schematic fact -- flagged rather
+than presented as solved.
+
+### What's deliberately separated as "not the original machine"
+
+Solo monitoring and a master-level knob are real, useful, and have no
+analogue on the 1972 hardware -- the brief itself asked for solo as an
+explicit software convenience. Rather than dress them up as vintage
+controls, they live in a plainly modern "Mix utilities" panel below the
+machine graphic, labelled as such, so the retro reproduction above it
+isn't muddied with controls that didn't exist.
+
+### Known rough edges
+
+- Jacks (ST/SP OUT, TRIG IN/OUT, OUT INSTRUMENTS A-F) are decorative --
+  there's no real multi-jack audio routing story in a browser tab beyond
+  the individual `AudioNode`s already exposed via `EKO.audio.outputNode`.
+- The badge's circular "COMPUTERHYTHM" wordmark is a repeated-text
+  `textPath` around an SVG circle, not a traced copy of the real badge
+  artwork (which isn't available at high enough resolution in the source
+  photos to trace faithfully).

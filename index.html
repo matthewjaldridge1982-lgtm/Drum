@@ -10,37 +10,76 @@
 <div class="app">
   <header class="title-bar">
     <h1>EKO ComputeRhythm</h1>
-    <div class="subtitle">virtual recreation — Phase 2: the card system &middot; <a href="tests.html" style="color:inherit">reader tests</a></div>
+    <div class="subtitle">virtual recreation &middot; <a href="tests.html">reader tests</a></div>
   </header>
 
-  <section class="panel">
-    <h2>Transport</h2>
-    <div class="transport-bar">
-      <div class="transport-buttons">
-        <button id="btn-start" class="xport-btn">Start</button>
-        <button id="btn-stop" class="xport-btn">Stop</button>
+  <div class="machine">
+    <div class="cheek"></div>
+    <div class="machine-body">
+      <div class="top-strip"><div class="handle"></div></div>
+
+      <div class="control-area">
+        <div id="matrix-container"></div>
+
+        <div class="cancel-strip">
+          <button id="btn-cancel" class="general-cancel-btn" title="General Cancel"></button>
+          <div class="cancel-strip-label">GENERAL<br>CANCEL</div>
+        </div>
+
+        <div class="badge-card-area">
+          <div class="badge">
+            <svg viewBox="0 0 100 100">
+              <defs>
+                <path id="badgeCircle" d="M 50,15 A 35,35 0 1 1 49.9,15" fill="none"/>
+              </defs>
+              <text font-size="8.3" letter-spacing="0.5">
+                <textPath href="#badgeCircle" startOffset="2">COMPUTERHYTHM &nbsp;&middot;&nbsp; COMPUTERHYTHM &nbsp;&middot;&nbsp;</textPath>
+              </text>
+              <text x="50" y="54" font-size="11" text-anchor="middle" font-style="italic">EKO</text>
+            </svg>
+          </div>
+          <div class="card-slot-mouth"></div>
+          <div id="card-editor-container" class="card-editor-container"></div>
+          <div class="swipe-slider">
+            <label for="head-slider">Head</label>
+            <input id="head-slider" type="range" min="0" max="1000" value="0" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-strip">
+        <div class="eko-logo">EKO</div>
+
+        <div class="power-switch-wrap">
+          <div id="power-switch" class="power-switch"><div class="power-toggle"></div></div>
+          <span>ON&nbsp;&nbsp;OFF</span>
+        </div>
+
+        <div class="knob-labelled"><div id="volume-knob-slot"></div><span>VOLUME</span></div>
+        <div class="knob-labelled"><div id="speed-knob-slot"></div><span>SPEED</span></div>
+
+        <div class="knob-labelled"><div id="start-led" class="led"></div><span></span></div>
+        <button id="btn-start" class="xport-btn">Start&thinsp;/&thinsp;Stop</button>
         <button id="btn-hold" class="xport-btn">Hold</button>
-        <button id="btn-cancel" class="xport-btn danger">General Cancel</button>
-      </div>
-      <div class="tempo-control">
-        <label for="tempo-slider">Speed</label>
-        <input id="tempo-slider" type="range" min="80" max="600" step="5" value="200">
-        <span id="tempo-readout" class="tempo-readout"></span>
-      </div>
-      <div class="length-control">
-        <label>Time signature</label>
         <div id="length-buttons" class="length-buttons"></div>
+
+        <div class="jacks">
+          <div class="jack-group"><div class="jack-row"><div class="jack"></div><div class="jack"></div></div><span>ST/SP&nbsp;OUT</span></div>
+          <div class="jack-group"><div class="jack-row"><div class="jack"></div><div class="jack"></div></div><span>TRIG<br>IN&nbsp;&nbsp;OUT</span></div>
+          <div class="jack-group"><div class="jack-row"><div class="jack"></div><div class="jack"></div><div class="jack"></div><div class="jack"></div><div class="jack"></div><div class="jack"></div></div><span>OUT INSTRUMENTS A-F</span></div>
+        </div>
       </div>
     </div>
-  </section>
+    <div class="cheek"></div>
+  </div>
+
+  <footer class="hint" style="margin-top:-6px; margin-bottom:24px;">
+    Click a lamp to punch/unpunch it, or program the matrix by dragging the card below. Each row's
+    A/B switch (right of the two level knobs) picks which of the row's two instruments fires.
+  </footer>
 
   <section class="panel">
-    <h2>Programme matrix (A–F × 1–16)</h2>
-    <div id="matrix-container"></div>
-  </section>
-
-  <section class="panel">
-    <h2>Punch card</h2>
+    <h2>Card import / export</h2>
     <div class="card-toolbar">
       <button id="card-new" class="xport-btn">New card</button>
       <button id="card-export-json" class="xport-btn">Export JSON</button>
@@ -49,32 +88,18 @@
       <button id="card-export-pdf" class="xport-btn">Export 1:1 PDF</button>
       <span id="reader-status" class="reader-status"></span>
     </div>
-    <div id="card-editor-container" class="card-editor-container"></div>
-    <div class="swipe-slider">
-      <label for="head-slider">Read head position</label>
-      <input id="head-slider" type="range" min="0" max="1000" value="0" step="1">
-    </div>
-    <footer class="hint">
-      Click a hole to punch/unpunch it. Press and drag anywhere on the card to scrub the
-      read head across it — the matrix above fills in column by column as the STEP track
-      strobes each one. Drag the head back past START (or click "New card") to re-arm a
-      fresh read.
-    </footer>
   </section>
 
   <section class="panel">
-    <h2>Instruments</h2>
+    <h2>Mix utilities</h2>
+    <div class="panel-note">Not on the original hardware -- solo monitoring and a master trim, added because a browser can offer them cheaply. Per-instrument level lives on the machine itself (the small knobs beside each row).</div>
     <div id="instrument-strip" class="instrument-strip"></div>
   </section>
-
-  <footer class="hint">
-    Click a lamp to punch/unpunch it directly, or program the matrix from a card below.
-    Each row's two toggle labels pick which of the row's two instruments fires.
-  </footer>
 </div>
 
 <script src="js/instruments.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/knob.js"></script>
 <script src="js/matrix.js"></script>
 <script src="js/transport.js"></script>
 <script src="js/reader.js"></script>
