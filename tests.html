@@ -4,9 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EKO ComputeRhythm — reader tests</title>
-<link rel="stylesheet" href="css/styles.css">
 <style>
-  .app { max-width: 900px; }
+  :root { --ink: #ece6df; --ink-dim: #9c9388; --accent: #d94f2b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #100e0d; color: var(--ink); font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .app { max-width: 900px; margin: 0 auto; padding: 16px 20px 60px; }
+  header.title-bar { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 8px; border-bottom: 2px solid #3a352f; margin-bottom: 16px; }
+  header.title-bar h1 { margin: 0; font-size: 1.6rem; color: var(--accent); font-family: Georgia, serif; }
+  header.title-bar a { color: inherit; }
   .case { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #3a352f; }
   .case.pass { border-color: #2e6b3e; background: #12241a; }
   .case.fail { border-color: #8c2e22; background: #2a1512; }

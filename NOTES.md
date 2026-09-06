@@ -183,3 +183,129 @@ START-on-the-left/STOP-on-the-right is my choice, not a confirmed fact
 about the original.
 
 (Phase 3 notes to be appended below at its check-in.)
+
+## 3D panel redesign (branch: claude/eko-3d-panel-redesign)
+
+Triggered by four reference photos of a real ComputeRhythm unit (not part
+of the original service manual). Built on its own branch so the working,
+tested 2D build (Phases 1-2, on `claude/eko-computerythm-build-cy6zmw`)
+stays untouched and comparable.
+
+### What the photos confirmed or corrected
+
+- **Instrument pairing, independently confirmed.** The panel photo's row
+  labels (top to bottom: Rolling Drum/Cymbal1, Cymbal2/Snare, Timbal2/
+  Charleston, Triangle/Clave, Block2/Timbal1, Block1/Bass Drum) match the
+  Phase-1 pairing read off the schematic switches exactly. That pairing
+  was already high-confidence from a direct schematic read; this is
+  independent visual confirmation from real hardware, not new evidence
+  changing the answer.
+- **Row order is reversed from this app's internal order.** The real
+  panel runs F-to-A top-to-bottom; this codebase's `EKO.ROWS` is A-to-F
+  (matching the schematic's SW910=row-A numbering). The 3D build displays
+  rows in the photographed F..A order via a display-only array in
+  `scene3d.js` (`DISPLAY_ROWS`) -- no change to row keys or any logic
+  module. The 2D build was not changed to match; that's a small,
+  independent fix worth doing there too if wanted.
+- **START/STOP is a single toggle button on the real panel**, not
+  separate Start and Stop buttons as built in Phase 1. The 3D build
+  matches the photo (one `startStop` button). Not backported to the 2D
+  build here.
+- **Time-signature buttons read left-to-right ascending** (x5..x16) in
+  the photo; Phase 1 built them descending. The 3D build matches the
+  photo's order.
+
+### What the photos raised but did NOT resolve
+
+The real panel has, per row, one long-throw slider plus two small round
+knobs (one near each of the row's two instrument names), plus a separate
+column of six small knobs beside the matrix under "GENERAL CANCEL" /
+"CANCEL". Photos alone can't tell you what a control actually *does*
+electrically -- there's no way to distinguish a continuous pot from a
+detented rotary switch by looking at it. This build's control mapping is
+therefore an interpretation, not a newly-confirmed fact:
+
+- 6 sliders -> each row's shared output level.
+- 12 knobs -> each instrument's own trim (satisfies "each of the twelve
+  gets its own level fader" from the original brief, as a rotary rather
+  than linear control, matching what the photo actually shows).
+- A small toggle per row (its exact real-world form is unconfirmed) ->
+  the A/B instrument select that Phase 1 built as a labelled button pair.
+- The 6 knobs beside the matrix -> per-row clear, with the button above
+  them -> general cancel (the general-cancel wiring is schematic-
+  confirmed from Phase 1; the per-row knobs' function is inferred here,
+  chosen because it's obviously useful and doesn't conflict with anything
+  read from the schematic).
+
+Flagging this rather than presenting six-sliders-plus-twelve-knobs as a
+solved mystery -- it isn't one.
+
+### Engine choice: Babylon.js 9.25.0 (vendored), not Three.js
+
+Every JS 3D engine considered was checked against one hard constraint
+carried over from Phase 1: `index.html` must still open and run with no
+server, which rules out `type="module"` scripts (Chrome/Safari refuse to
+load ES modules over `file://`).
+
+- **Three.js** dropped its plain global-script (`build/three.min.js`)
+  build around r150 -- current releases (checked: 0.169.0) ship ES
+  modules only. The last version with a working global build is r149
+  (Feb 2023, `npm pack three@0.149.0`), which would mean sitting on a
+  ~3-year-old release to satisfy the file:// requirement.
+- **Babylon.js**, checked at its actual current release (9.25.0, `npm
+  pack babylonjs@9.25.0` -- confirmed via `npm view babylonjs versions`),
+  still publishes a real UMD-style global build (`babylon.js`, sets
+  `window.BABYLON`) alongside its modern scoped-package/ES-module
+  distribution. That build already includes `WebGPUEngine` (confirmed:
+  `grep WebGPUEngine` on the vendored file) with automatic fallback to
+  WebGL2 -- genuinely current tech, not a compatibility-driven downgrade.
+
+Babylon.js 9.25.0 is vendored at `vendor/babylonjs/babylon.js` (~8MB,
+MIT-licensed) so the page works fully offline with no CDN dependency --
+consistent with "open index.html and it works." This session's outbound
+network access blocked jsdelivr/unpkg entirely but allowed
+`registry.npmjs.org` directly, which is how both engines were actually
+inspected above rather than assumed from memory.
+
+The renderer still falls back to the standard WebGL2 `Engine` here (not
+`WebGPUEngine`) for reliability -- WebGPU support is inconsistent enough
+across browsers (and unverifiable in this sandbox's headless Chromium)
+that defaulting to it would risk the page not rendering at all for some
+users. Swapping in `WebGPUEngine` with a `WebGPUEngine.IsSupportedAsync()`
+capability check is a small, isolated change in `scene3d.js` if you want
+to chase that.
+
+### What's genuinely 3D vs. what's still 2D-in-spirit
+
+Every control is a real 3D mesh, picked and dragged via Babylon's
+raycasting (`scene.onPointerObservable` + `scene.pick`), not a flat
+texture standing in for controls: the 96-lamp matrix, all 6 sliders, all
+12 trim knobs, the 6 row A/B toggles, general cancel, the 6 per-row
+cancel knobs, the transport buttons and speed knob, and the card itself.
+The card is a textured plane (its face is a `DynamicTexture` redrawn from
+the exact same `card.js` geometry used for the 2D editor and the PDF
+export) that slides bodily along the scene's depth axis as you drag it --
+dragging it *is* moving the read head, through the same unmodified
+`swipe.js`/`reader.js` used everywhere else in this project. Picking a
+hole on the card resolves the click's UV coordinate back to a physical
+(track, column) via `card.js`'s geometry, so click-to-punch works
+directly on the 3D object, not through a 2D fallback.
+
+What isn't attempted: photorealistic materials (no wood-grain or brushed-
+metal textures, only flat PBR-ish colours), physically measured cabinet
+dimensions (proportions are eyeballed from the photos, not measured), and
+a fully free camera (the `ArcRotateCamera` is deliberately radius/beta-
+limited so the panel stays operable rather than lettable to view from
+useless angles).
+
+### Known rough edges
+
+- The camera-vs-control drag disambiguation (`ArcRotateCamera.detachControl()`
+  while a control drag is in progress) works but hands are needed on real
+  hardware to confirm touch behaves as well as the tested mouse/pointer
+  path did.
+- No keyboard/accessibility path exists for the 3D controls (a plain-DOM
+  fallback would be needed for that; not attempted here).
+- Label text (row instrument names, branding plate) is legible at
+  moderate zoom but will alias at a distance -- `DynamicTexture` at a
+  fixed resolution, not adaptive.
