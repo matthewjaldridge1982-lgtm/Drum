@@ -183,3 +183,67 @@ START-on-the-left/STOP-on-the-right is my choice, not a confirmed fact
 about the original.
 
 (Phase 3 notes to be appended below at its check-in.)
+
+## SCORM / LMS packaging (branch: claude/eko-scorm-lms-package)
+
+Forked from the Phase 1+2 build (`claude/eko-computerythm-build-cy6zmw`),
+not from either visual-redesign branch. Wraps the existing app for
+delivery inside an LMS as a SCORM 1.2 package, with no change to the
+app's behaviour when run standalone.
+
+**What was added:**
+- `js/scorm.js` -- a dependency-free runtime wrapper. It looks for
+  `window.API` (SCORM 1.2) or `window.API_1484_11` (SCORM 2004) by
+  walking up the `window.parent` chain (the standard technique every
+  SCORM course uses, since the LMS injects the API object into some
+  ancestor frame, not the SCO's own window) and adapts its calls to
+  whichever it finds. If neither is found -- opening `index.html`
+  directly, or the existing dev workflow -- every function is a no-op:
+  the app runs exactly as it did on the base branch. Nothing else in the
+  codebase changed to make this possible.
+- `imsmanifest.xml` at the repo root -- a single-SCO SCORM 1.2 manifest
+  pointing at `index.html`, listing the actual runtime files as
+  `<file>` resources.
+- `scripts/build-scorm.sh` -- packages `imsmanifest.xml`, `index.html`,
+  `css/`, and `js/` into a zip. Deliberately leaves out `tests.html`,
+  `tests/`, `NOTES.md`, `README.md` and `scripts/` itself -- those are
+  development artifacts, not part of the lesson an LMS would serve.
+- Two lines in `app.js`: `EKO.scorm.init()` on load, `EKO.scorm.terminate()`
+  on `beforeunload`, and a call to `EKO.scorm.setComplete()` folded into
+  the *existing* first-interaction listener (the one that already
+  unlocks audio playback on the first click/touch).
+
+**What "completion" means here, and why:** there's no quiz or scored
+task in this app -- it's a hands-on simulator. The honest completion
+signal for that is "the learner touched the machine," not "the page
+loaded," so `cmi.core.lesson_status` (SCORM 1.2) / `cmi.completion_status`
+(2004) flips from `incomplete` to `completed` on first interaction, not
+on load. `cmi.success_status` is set to `unknown` under 2004 since there's
+no pass/fail criteria to report. Session time is committed on unload in
+each spec's own format (`HHHH:MM:SS` for 1.2, ISO 8601 duration for 2004).
+A returning learner's already-`completed` status is read back and left
+alone rather than being reset to `incomplete` on re-entry.
+
+**What wasn't done:** the manifest doesn't bundle the official SCORM XSD
+schema files (`imscp_rootv1p1p2.xsd` etc.) that the namespace URIs point
+at -- most LMSs (Moodle, SCORM Cloud, etc.) parse the manifest structurally
+and don't fetch or require those files to be physically present in the
+package, but a validator that insists on resolving them locally would
+flag their absence. Multi-SCO structure, `cmi.interactions`, and
+suspend-data (bookmarking mid-session) weren't built either -- nothing in
+this app currently needs to survive across a suspend/resume, since all
+state (matrix pattern, card, levels) is deliberately session-local, same
+as the original hardware losing its program on power-off.
+
+**How this was verified** (no real LMS was available in this sandbox):
+a mock SCORM API was written for both 1.2 and 2004 (logging every call),
+the app was loaded inside an iframe under a local HTTP server (file://
+iframing hits browser origin restrictions a real LMS wouldn't), and the
+actual call sequence was captured for both spec versions: `Initialize` ->
+read existing status -> seed `incomplete` -> (learner clicks) ->
+`completed` -> (page closes) -> session time -> `Finish`/`Terminate`.
+Standalone `file://` operation (no LMS) was also verified to produce zero
+console errors, exactly matching the base branch. The built zip
+(`scripts/build-scorm.sh`) was inspected to confirm `imsmanifest.xml`
+sits at the archive root with correct relative paths to every file it
+references.

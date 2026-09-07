@@ -14,9 +14,16 @@
     buildInstrumentStrip();
     buildCardSystem();
 
-    // Most browsers require a user gesture before audio starts.
+    // No-op outside an LMS (see scorm.js) -- safe to always call.
+    EKO.scorm.init();
+    global.addEventListener('beforeunload', function () { EKO.scorm.terminate(); });
+
+    // Most browsers require a user gesture before audio starts. Also the
+    // simplest honest "completion" signal for a hands-on simulator with
+    // no quiz: the learner actually touched the machine.
     document.body.addEventListener('pointerdown', function once() {
       EKO.audio.resume();
+      EKO.scorm.setComplete();
       document.body.removeEventListener('pointerdown', once);
     });
   });

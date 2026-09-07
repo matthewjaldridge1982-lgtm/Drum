@@ -1,0 +1,41 @@
+<?xml version="1.0" standalone="no" ?>
+<manifest identifier="COM.EKO.COMPUTERHYTHM.SCORM12" version="1"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                       http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+
+  <organizations default="EKO_ORG">
+    <organization identifier="EKO_ORG">
+      <title>EKO ComputeRhythm -- Virtual Recreation</title>
+      <item identifier="ITEM_EKO" identifierref="RES_EKO" isvisible="true">
+        <title>EKO ComputeRhythm</title>
+        <adlcp:masteryscore></adlcp:masteryscore>
+      </item>
+    </organization>
+  </organizations>
+
+  <resources>
+    <resource identifier="RES_EKO" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html"/>
+      <file href="css/styles.css"/>
+      <file href="js/instruments.js"/>
+      <file href="js/audio.js"/>
+      <file href="js/matrix.js"/>
+      <file href="js/transport.js"/>
+      <file href="js/reader.js"/>
+      <file href="js/card.js"/>
+      <file href="js/swipe.js"/>
+      <file href="js/pdf.js"/>
+      <file href="js/cardview.js"/>
+      <file href="js/scorm.js"/>
+      <file href="js/app.js"/>
+    </resource>
+  </resources>
+</manifest>
